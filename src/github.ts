@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import { GitHub } from "@actions/github/lib/utils";
 import { Config, isTag, releaseBody } from "./util";
-import { lstatSync, readFileSync } from "fs";
+import { statSync, readFileSync } from "fs";
 import { getType } from "mime";
 import { basename } from "path";
 
@@ -61,6 +61,12 @@ export interface Releaser {
     generate_release_notes: boolean | undefined;
   }): Promise<{ data: Release }>;
 
+  deleteRelease(params: {
+    owner: string;
+    repo: string;
+    release_id: number;
+  }): Promise<{ data: Release }>;
+
   allReleases(params: {
     owner: string;
     repo: string;
@@ -112,6 +118,14 @@ export class GitHubReleaser implements Releaser {
     return this.github.rest.repos.updateRelease(params);
   }
 
+  deleteRelease(params: {
+    owner: string;
+    repo: string;
+    release_id: number;
+  }): Promise<{ data: Release }> {
+    return this.github.rest.repos.deleteRelease(params);
+  }
+
   allReleases(params: {
     owner: string;
     repo: string;
@@ -127,7 +141,7 @@ export const asset = (path: string): ReleaseAsset => {
   return {
     name: basename(path),
     mime: mimeOrDefault(path),
-    size: lstatSync(path).size,
+    size: statSync(path).size,
     data: readFileSync(path)
   };
 };
@@ -198,6 +212,48 @@ export const release = async (
 
   const discussion_category_name = config.input_discussion_category_name;
   const generate_release_notes = config.input_generate_release_notes;
+
+  const createRelease = async () => {
+    const tag_name = tag;
+    const name = config.input_name || tag;
+    const body = releaseBody(config);
+    const draft = config.input_draft;
+    const prerelease = config.input_prerelease;
+    const target_commitish = config.input_target_commitish;
+    let commitMessage: string = "";
+    if (target_commitish) {
+      commitMessage = ` using commit "${target_commitish}"`;
+    }
+    console.log(
+      `👩‍🏭 Creating new GitHub release for tag ${tag_name}${commitMessage}...`
+    );
+    try {
+      let release = await releaser.createRelease({
+        owner,
+        repo,
+        tag_name,
+        name,
+        body,
+        draft,
+        prerelease,
+        target_commitish,
+        discussion_category_name,
+        generate_release_notes
+      });
+      return release.data;
+    } catch (error) {
+      // presume a race with competing metrix runs
+      console.log(
+        `⚠️ GitHub release failed with status: ${
+          error.status
+        }\n${JSON.stringify(
+          error.response.data.errors
+        )}\nretrying... (${maxRetries - 1} retries remaining)`
+      );
+      return release(config, releaser, maxRetries - 1);
+    }
+  };
+
   try {
     // you can't get a an existing draft by tag
     // so we must find one in the list of all releases
@@ -219,6 +275,13 @@ export const release = async (
     });
 
     const release_id = existingRelease.data.id;
+
+    if (config.input_delete_on_existing) {
+      console.log(`⚠ Deleting existing release ${owner}/${repo}@${release_id}`);
+      await releaser.deleteRelease({ owner, repo, release_id });
+      return createRelease();
+    }
+
     let target_commitish: string;
     if (
       config.input_target_commitish &&
@@ -238,7 +301,14 @@ export const release = async (
     // body parts as a release gets updated. some users will likely want this while
     // others won't previously this was duplicating content for most which
     // no one wants
-    let body = releaseBody(config) || existingRelease.data.body || "";
+    const workflowBody = releaseBody(config) || "";
+    const existingReleaseBody = existingRelease.data.body || "";
+    let body: string;
+    if (config.input_append_body && workflowBody && existingReleaseBody) {
+      body = existingReleaseBody + "\n" + workflowBody;
+    } else {
+      body = workflowBody || existingReleaseBody;
+    }
 
     const draft =
       config.input_draft !== undefined
@@ -265,44 +335,7 @@ export const release = async (
     return release.data;
   } catch (error) {
     if (error.status === 404) {
-      const tag_name = tag;
-      const name = config.input_name || tag;
-      const body = releaseBody(config);
-      const draft = config.input_draft;
-      const prerelease = config.input_prerelease;
-      const target_commitish = config.input_target_commitish;
-      let commitMessage: string = "";
-      if (target_commitish) {
-        commitMessage = ` using commit "${target_commitish}"`;
-      }
-      console.log(
-        `👩‍🏭 Creating new GitHub release for tag ${tag_name}${commitMessage}...`
-      );
-      try {
-        let release = await releaser.createRelease({
-          owner,
-          repo,
-          tag_name,
-          name,
-          body,
-          draft,
-          prerelease,
-          target_commitish,
-          discussion_category_name,
-          generate_release_notes
-        });
-        return release.data;
-      } catch (error) {
-        // presume a race with competing metrix runs
-        console.log(
-          `⚠️ GitHub release failed with status: ${
-            error.status
-          }\n${JSON.stringify(
-            error.response.data.errors
-          )}\nretrying... (${maxRetries - 1} retries remaining)`
-        );
-        return release(config, releaser, maxRetries - 1);
-      }
+      return createRelease();
     } else {
       console.log(
         `⚠️ Unexpected error fetching GitHub release for tag ${config.github_ref}: ${error}`

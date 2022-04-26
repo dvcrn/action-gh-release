@@ -43,6 +43,12 @@ inputs:
   generate_release_notes:
     description: "Whether to automatically generate the name and body for this release. If name is specified, the specified name will be used; otherwise, a name will be automatically generated. If body is specified, the body will be pre-pended to the automatically generated notes."
     required: false
+  append_body:
+    description: "Whether to append to the existing body instead of overwriting. Default is false."
+    required: false
+  delete_on_existing:
+    description: "Whether or not to delete an existing release entirely when running this action."
+    required: false
 env:
   "GITHUB_TOKEN": "As provided by Github Actions"
 outputs:
@@ -52,6 +58,8 @@ outputs:
     description: "Release ID"
   upload_url:
     description: "URL for uploading assets to the release"
+  assets:
+    description: "JSON array containing information about each uploaded asset, in the format given [here](https://docs.github.com/en/rest/reference/repos#upload-a-release-asset--code-samples) (minus the `uploader` field)"
 runs:
   using: "node12"
   main: "dist/index.js"

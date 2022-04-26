@@ -51,7 +51,8 @@ describe("util", () => {
           input_tag_name: undefined,
           input_target_commitish: undefined,
           input_discussion_category_name: undefined,
-          input_generate_release_notes: false
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
         })
       );
     });
@@ -71,7 +72,8 @@ describe("util", () => {
           input_tag_name: undefined,
           input_target_commitish: undefined,
           input_discussion_category_name: undefined,
-          input_generate_release_notes: false
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
         })
       );
     });
@@ -91,7 +93,8 @@ describe("util", () => {
           input_tag_name: undefined,
           input_target_commitish: undefined,
           input_discussion_category_name: undefined,
-          input_generate_release_notes: false
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
         })
       );
     });
@@ -113,6 +116,7 @@ describe("util", () => {
           github_ref: "",
           github_repository: "",
           github_token: "",
+          input_append_body: false,
           input_body: undefined,
           input_body_path: undefined,
           input_draft: undefined,
@@ -123,7 +127,8 @@ describe("util", () => {
           input_fail_on_unmatched_files: false,
           input_target_commitish: undefined,
           input_discussion_category_name: undefined,
-          input_generate_release_notes: false
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
         }
       );
     });
@@ -137,6 +142,7 @@ describe("util", () => {
           github_ref: "",
           github_repository: "",
           github_token: "",
+          input_append_body: false,
           input_body: undefined,
           input_body_path: undefined,
           input_draft: undefined,
@@ -147,7 +153,8 @@ describe("util", () => {
           input_fail_on_unmatched_files: false,
           input_target_commitish: "affa18ef97bc9db20076945705aba8c516139abd",
           input_discussion_category_name: undefined,
-          input_generate_release_notes: false
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
         }
       );
     });
@@ -160,6 +167,7 @@ describe("util", () => {
           github_ref: "",
           github_repository: "",
           github_token: "",
+          input_append_body: false,
           input_body: undefined,
           input_body_path: undefined,
           input_draft: undefined,
@@ -170,7 +178,8 @@ describe("util", () => {
           input_fail_on_unmatched_files: false,
           input_target_commitish: undefined,
           input_discussion_category_name: "releases",
-          input_generate_release_notes: false
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
         }
       );
     });
@@ -184,6 +193,7 @@ describe("util", () => {
           github_ref: "",
           github_repository: "",
           github_token: "",
+          input_append_body: false,
           input_body: undefined,
           input_body_path: undefined,
           input_draft: undefined,
@@ -194,7 +204,34 @@ describe("util", () => {
           input_fail_on_unmatched_files: false,
           input_target_commitish: undefined,
           input_discussion_category_name: undefined,
-          input_generate_release_notes: true
+          input_generate_release_notes: true,
+          input_delete_on_existing: false
+        }
+      );
+    });
+
+    it("supports deleting existing releases", () => {
+      assert.deepStrictEqual(
+        parseConfig({
+          INPUT_DELETE_ON_EXISTING: "true"
+        }),
+        {
+          github_ref: "",
+          github_repository: "",
+          github_token: "",
+          input_append_body: false,
+          input_body: undefined,
+          input_body_path: undefined,
+          input_draft: undefined,
+          input_prerelease: undefined,
+          input_files: [],
+          input_name: undefined,
+          input_tag_name: undefined,
+          input_fail_on_unmatched_files: false,
+          input_target_commitish: undefined,
+          input_discussion_category_name: undefined,
+          input_generate_release_notes: false,
+          input_delete_on_existing: true
         }
       );
     });
@@ -211,6 +248,7 @@ describe("util", () => {
           github_ref: "",
           github_repository: "",
           github_token: "env-token",
+          input_append_body: false,
           input_body: undefined,
           input_body_path: undefined,
           input_draft: false,
@@ -221,7 +259,8 @@ describe("util", () => {
           input_fail_on_unmatched_files: false,
           input_target_commitish: undefined,
           input_discussion_category_name: undefined,
-          input_generate_release_notes: false
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
         }
       );
     });
@@ -236,6 +275,7 @@ describe("util", () => {
           github_ref: "",
           github_repository: "",
           github_token: "input-token",
+          input_append_body: false,
           input_body: undefined,
           input_body_path: undefined,
           input_draft: false,
@@ -246,7 +286,8 @@ describe("util", () => {
           input_fail_on_unmatched_files: false,
           input_target_commitish: undefined,
           input_discussion_category_name: undefined,
-          input_generate_release_notes: false
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
         }
       );
     });
@@ -260,6 +301,7 @@ describe("util", () => {
           github_ref: "",
           github_repository: "",
           github_token: "",
+          input_append_body: false,
           input_body: undefined,
           input_body_path: undefined,
           input_draft: false,
@@ -270,7 +312,33 @@ describe("util", () => {
           input_fail_on_unmatched_files: false,
           input_target_commitish: undefined,
           input_discussion_category_name: undefined,
-          input_generate_release_notes: false
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
+        }
+      );
+    });
+    it("parses basic config with append_body", () => {
+      assert.deepStrictEqual(
+        parseConfig({
+          INPUT_APPEND_BODY: "true"
+        }),
+        {
+          github_ref: "",
+          github_repository: "",
+          github_token: "",
+          input_append_body: true,
+          input_body: undefined,
+          input_body_path: undefined,
+          input_draft: undefined,
+          input_prerelease: undefined,
+          input_files: [],
+          input_name: undefined,
+          input_tag_name: undefined,
+          input_fail_on_unmatched_files: false,
+          input_target_commitish: undefined,
+          input_discussion_category_name: undefined,
+          input_generate_release_notes: false,
+          input_delete_on_existing: false
         }
       );
     });

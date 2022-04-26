@@ -1,5 +1,5 @@
 import * as glob from "glob";
-import { lstatSync, readFileSync } from "fs";
+import { statSync, readFileSync } from "fs";
 
 export interface Config {
   github_token: string;
@@ -18,6 +18,8 @@ export interface Config {
   input_target_commitish?: string;
   input_discussion_category_name?: string;
   input_generate_release_notes?: boolean;
+  input_append_body?: boolean;
+  input_delete_on_existing?: boolean;
 }
 
 export const uploadUrl = (url: string): string => {
@@ -67,14 +69,16 @@ export const parseConfig = (env: Env): Config => {
     input_target_commitish: env.INPUT_TARGET_COMMITISH || undefined,
     input_discussion_category_name:
       env.INPUT_DISCUSSION_CATEGORY_NAME || undefined,
-    input_generate_release_notes: env.INPUT_GENERATE_RELEASE_NOTES == "true"
+    input_generate_release_notes: env.INPUT_GENERATE_RELEASE_NOTES == "true",
+    input_append_body: env.INPUT_APPEND_BODY == "true",
+    input_delete_on_existing: env.INPUT_DELETE_ON_EXISTING == "true"
   };
 };
 
 export const paths = (patterns: string[]): string[] => {
   return patterns.reduce((acc: string[], pattern: string): string[] => {
     return acc.concat(
-      glob.sync(pattern).filter(path => lstatSync(path).isFile())
+      glob.sync(pattern).filter(path => statSync(path).isFile())
     );
   }, []);
 };
@@ -82,7 +86,7 @@ export const paths = (patterns: string[]): string[] => {
 export const unmatchedPatterns = (patterns: string[]): string[] => {
   return patterns.reduce((acc: string[], pattern: string): string[] => {
     return acc.concat(
-      glob.sync(pattern).filter(path => lstatSync(path).isFile()).length == 0
+      glob.sync(pattern).filter(path => statSync(path).isFile()).length == 0
         ? [pattern]
         : []
     );
